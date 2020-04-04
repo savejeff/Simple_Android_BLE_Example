@@ -30,7 +30,8 @@ public class Main2Activity extends AppCompatActivity {
 
 
     String TAG = "BLE";
-    String YOUR_DEVICE_NAME = "BlueJeff";
+    //String YOUR_DEVICE_NAME = "BlueJeff";
+    String YOUR_DEVICE_NAME = "UART Service";
 
     //Bluetooth's variables
     BluetoothAdapter bluetoothAdapter;
@@ -50,9 +51,23 @@ public class Main2Activity extends AppCompatActivity {
     //final UUID DESCRIPTOR_UUID_ID = UUID.fromString("ec6e1003-884b-4a1c-850f-1cfce9cf6567");
     //final UUID SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
     //final UUID CHARACTERISTIC_UUID_ID = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E");
-    final UUID SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
-    final UUID CHARACTERISTIC_UUID_ID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8");
-    //final UUID DESCRIPTOR_UUID_ID = UUID.fromString("ec6e1003-884b-4a1c-850f-1cfce9cf6567");
+
+
+    //Test_ESP_BLE_server
+    //final UUID SERVICE_UUID = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
+    //final UUID CHARACTERISTIC_UUID_ID = UUID.fromString("beb5483e-36e1-4688-b7f5-ea07361b26a8");
+
+
+
+    //Test_ESP_BLE_uart
+    final UUID SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
+    //final UUID CHARACTERISTIC_UUID_ID = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E"); //TX
+    final UUID CHARACTERISTIC_UUID_ID = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E"); //RX
+
+    final UUID DESCRIPTOR_UUID_ID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+
+
+
 
 
     TextView TV_Out;
@@ -135,6 +150,15 @@ public class Main2Activity extends AppCompatActivity {
 
         ((EditText) findViewById(R.id.ET_Value_Out)).setText("Result: '" + value_string + "'");
 
+    }
+
+
+
+    public void B_RQST_ReadValue_onClick(View v)
+    {
+        Log.e(TAG, "RQST Read Value");
+
+        gattClient.readCharacteristic(characteristic);
     }
 
     public void B_WriteValue_onClick(View v)
@@ -277,11 +301,24 @@ public class Main2Activity extends AppCompatActivity {
             Log.e(TAG,"onServicesDiscovered() getting characteristic");
             characteristic = service.getCharacteristic(CHARACTERISTIC_UUID_ID);
 
-            Log.e(TAG,"onServicesDiscovered() requesting read of characteristic");
-            gatt.readCharacteristic(characteristic);
+            //Log.e(TAG,"onServicesDiscovered() requesting read of characteristic");
+            //gatt.readCharacteristic(characteristic);
 
             Log.e(TAG,"onServicesDiscovered() enable Notification on characteristic");
             gatt.setCharacteristicNotification(characteristic, true);
+
+
+            //Enable Notification for UART TX
+            BluetoothGattDescriptor _descriptor = characteristic.getDescriptor(DESCRIPTOR_UUID_ID);
+            if(_descriptor != null) {
+                Log.e(TAG, "onServicesDiscovered() Write to Descriptor ENABLE_NOTIFICATION_VALUE");
+                _descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                gatt.writeDescriptor(_descriptor);
+            }
+            else
+            {
+                Log.e(TAG, "onServicesDiscovered() descriptor == null");
+            }
 
             Log.e(TAG, "onServicesDiscovered(): Permissions=" + characteristic.getPermissions());
 
@@ -351,6 +388,8 @@ public class Main2Activity extends AppCompatActivity {
             else
                 Log.e(TAG,"onServicesDiscovered() Value=\"" + value_string + "\"");
 
+            //write to characteristic
+            /*
             if(value_string != null) {
                 Log.e(TAG, "onServicesDiscovered() setting value");
                 characteristic.setValue("Hallo this is GalaxyJeff");
@@ -358,10 +397,8 @@ public class Main2Activity extends AppCompatActivity {
                 Log.e(TAG, "onServicesDiscovered() sending characteristic");
                 gatt.writeCharacteristic(characteristic);
             }
+             */
 
-            //BluetoothGattDescriptor descriptor = characteristicID.getDescriptor(DESCRIPTOR_UUID_ID);
-            //descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-            //gatt.writeDescriptor(descriptor);
         }
 
         @Override

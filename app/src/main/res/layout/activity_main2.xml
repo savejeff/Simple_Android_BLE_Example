@@ -50,12 +50,21 @@
             android:id="@+id/ET_Value_Out"
             />
 
+
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Read Value"
             android:id="@+id/B_ReadValue"
             android:onClick="B_ReadValue_onClick"/>
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Request Read"
+            android:id="@+id/B_RQST_ReadValue"
+            android:onClick="B_RQST_ReadValue_onClick"/>
+
 
 
 
