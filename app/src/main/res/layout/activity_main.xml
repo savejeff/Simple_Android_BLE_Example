@@ -9,49 +9,81 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        >
+
+
+
+
+
+        <Button
+
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Disconnect"
+            android:id="@+id/B_Disconnect"
+            android:onClick="B_Disconnect_onClick"/>
+
+
+        <Button
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Script"
+            android:id="@+id/B_Scipting"
+            android:onClick="B_Scripting_onClick"/>
+
+
+        <EditText
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
+            android:id="@+id/ET_Value_Out"
+            />
+
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Scan View"
-            android:id="@+id/B_ScanView"
-            android:onClick="ButtonScanView_onClick" />
+            android:text="Read Value"
+            android:id="@+id/B_ReadValue"
+            android:onClick="B_ReadValue_onClick"/>
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Scan"
-            android:id="@+id/StartScanButton" />
+            android:text="Request Read"
+            android:id="@+id/B_RQST_ReadValue"
+            android:onClick="B_RQST_ReadValue_onClick"/>
+
+
+
+
+
+        <EditText
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/ET_Value"
+            />
 
         <Button
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Stop Scanning"
-            android:id="@+id/StopScanButton" />
+            android:text="Write Value"
+            android:id="@+id/B_WriteValue"
+            android:onClick="B_WriteValue_onClick"/>
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/PeripheralTextView"
-            android:scrollbars="vertical"
-            android:maxLines="30"/>
-
-        <Button
-            android:id="@+id/button"
+            android:id="@+id/TV_OUT"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Button" />
-
-        <TextView
-            android:id="@+id/TV_Output"
-            android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:text="INFOTEXT"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="STATUS"
+            />
     </LinearLayout>
 
 </ScrollView>
