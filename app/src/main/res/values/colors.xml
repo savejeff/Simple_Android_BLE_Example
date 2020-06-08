@@ -3,4 +3,21 @@
     <color name="colorPrimary">#008577</color>
     <color name="colorPrimaryDark">#00574B</color>
     <color name="colorAccent">#D81B60</color>
+
+    <color name="While">#FFFFFF</color>
+
+
+    <color name="colorText_Blue">#303f9f</color>
+
+    <color name="light_gray">#555555</color>
+    <color name="darker_gray">#868686</color>
+
+    <color name="color_red">#F11E0E</color>
+    <color name="color_green">#44D14A</color>
+
+
+    <color name="color_temp_low">#638DFA</color>
+    <color name="color_temp_medium">#44D14A</color>
+    <color name="color_temp_high">#F11E0E</color>
+
 </resources>

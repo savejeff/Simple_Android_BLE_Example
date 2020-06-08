@@ -13,20 +13,33 @@
         >
 
 
+        <TextView
 
+            android:id="@+id/TV_Status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:text="STATUS"
+            android:textAlignment="center"
+            />
 
 
         <Button
-
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+
             android:text="Disconnect"
             android:id="@+id/B_Disconnect"
             android:onClick="B_Disconnect_onClick"/>
 
 
         <Button
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Script"
@@ -52,7 +65,8 @@
 
 
         <Button
-
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Read Value"
@@ -60,6 +74,8 @@
             android:onClick="B_ReadValue_onClick"/>
 
         <Button
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Request Read"
@@ -76,6 +92,8 @@
             />
 
         <Button
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Write Value"
@@ -93,11 +111,30 @@
 
 
         <Button
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Start UART Checks"
             android:id="@+id/B_StartUARTCheck"
             android:onClick="B_StartUARTCheck_onClick"/>
+
+        <EditText
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Send over UART"
+            android:id="@+id/ET_WriteUART"
+            />
+
+        <Button
+            android:layout_marginTop="8dp"
+            android:paddingVertical="25dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Write UART"
+            android:id="@+id/B_WriteUART"
+            android:onClick="B_WriteUART_onClick"/>
 
         <TextView
             android:id="@+id/TV_OUT"

@@ -1,14 +1,20 @@
 package com.example.test_ble;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import static com.example.test_ble.global.DisplayToast;
 import static java.lang.String.format;
 
 public class MainActivity extends AppCompatActivity {
@@ -17,6 +23,10 @@ public class MainActivity extends AppCompatActivity {
     public BLEManager BLEM;
 
     TextView TV_Out;
+    TextView TV_Status;
+    Button B_Disconnect;
+
+    boolean UpdateUART = false;
 
     //Timer that recularly calles itself
     Handler timerHandler = new Handler();
@@ -24,7 +34,13 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-            Update_UART_RX();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Update_UI();
+                }
+            });
+
             timerHandler.postDelayed(this, 100);
         }
     };
@@ -36,16 +52,64 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Log.e(TAG,"onCreate()");
 
+        checkPermission();
+
         TV_Out = findViewById(R.id.TV_OUT);
+        TV_Status = findViewById(R.id.TV_Status);
+        B_Disconnect = findViewById(R.id.B_Disconnect);
 
         global.getInstance().init(this);
 
         String YOUR_DEVICE_NAME = "BLE_TEST_SERVER";
 
-        BLEM = global.getInstance().bleManager;
+        BLEM = global.getInstance().BLEMan;
 
-        BLEM.Connect(this, YOUR_DEVICE_NAME);
+        if(!BLEM.isBluetoothEnabled())
+        {
+            DisplayToast("Bluetooth disabled");
+        }
+        else
+            BLEM.Connect(this, YOUR_DEVICE_NAME);
 
+
+        //Start UI Update Timer
+        timerHandler.postDelayed(timerRunnable, 0);
+
+    }
+
+    public void checkPermission()
+    {
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Permission is not granted
+            // Should we show an explanation?
+
+            // No explanation needed; request the permission
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    0);
+            /*
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.ACCESS_FINE_LOCATION)) {
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+            } else {
+                // No explanation needed; request the permission
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        0);
+
+                // MY_PERMISSIONS_REQUEST_READ_CONTACTS is an
+                // app-defined int constant. The callback method gets the
+                // result of the request.
+            }*/
+        } else {
+            // Permission has already been granted
+            Log.e(TAG, "Permission granted");
+        }
     }
 
 
@@ -66,6 +130,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+	
+	
+    public void Update_UI()
+    {
+        TV_Status.setText(BLEM.isConnected()? format("CONNECTED to %s", BLEM.SERVER_NAME) : "DISCONNECTED");
+        TV_Status.setBackgroundColor(ContextCompat.getColor(this, (BLEM.isConnected()? R.color.color_green : R.color.color_red)));
+
+        B_Disconnect.setText(BLEM.isConnected()? "DISCONNECT" : "CONNECT");
+        B_Disconnect.setBackgroundColor(ContextCompat.getColor(this, (BLEM.isConnected()? R.color.color_red : R.color.color_green)));
+
+        if(UpdateUART)
+            Update_UART_RX();
+    }
+
+
 
     public void Update_UART_RX()
     {
@@ -82,9 +161,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    
     public void B_Disconnect_onClick(View v)
     {
-        BLEM.Disconnect();
+        if(BLEM.isConnected())
+            BLEM.Disconnect();
+        else
+            BLEM.Connect(this);
     }
 
     public void B_Scripting_onClick(View v)
@@ -101,13 +184,8 @@ public class MainActivity extends AppCompatActivity {
     public void B_StartUARTCheck_onClick(View v)
     {
         Log.e(TAG, "Scripting");
-        timerHandler.postDelayed(timerRunnable, 0);
-        /*
-        if(BLEM.UART_Available()) {
-            BLEM.UART_Write("MSG recieved!");
-            Log("UART", BLEM.UART_Read());
-        }
-         */
+
+        UpdateUART = true;
     }
 
     public void B_ReadValue_onClick(View v)
@@ -125,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
     {
         Log.e(TAG, "RQST Read Value");
 
-        global.getInstance().bleManager.RQST_ReadValue(global.getInstance().bleManager.CHARACTERISTIC_TEST);
+        global.getInstance().BLEMan.RQST_ReadValue(global.getInstance().BLEMan.CHARACTERISTIC_TEST);
     }
 
     public void B_WriteValue_onClick(View v)
@@ -134,7 +212,17 @@ public class MainActivity extends AppCompatActivity {
 
         String value_string = ((EditText) findViewById(R.id.ET_Value)).getText().toString();
 
-        global.getInstance().bleManager.WriteValue(global.getInstance().bleManager.CHARACTERISTIC_TEST, value_string);
+        global.getInstance().BLEMan.WriteValue(global.getInstance().BLEMan.CHARACTERISTIC_TEST, value_string);
     }
+
+
+    public void B_WriteUART_onClick(View v)
+    {
+        Log.e(TAG, "RQST Read Value");
+        EditText ET_WriteUART =  findViewById(R.id.ET_WriteUART);
+        BLEM.UART_Write(ET_WriteUART.getText().toString());
+        ET_WriteUART.setText("");
+    }
+
 
 }
