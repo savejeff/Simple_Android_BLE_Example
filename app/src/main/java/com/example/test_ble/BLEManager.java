@@ -16,10 +16,12 @@ import android.bluetooth.le.ScanResult;
 import android.util.Log;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
 import static android.content.Context.BLUETOOTH_SERVICE;
+import static java.lang.String.format;
 
 
 public class BLEManager {
@@ -29,7 +31,7 @@ public class BLEManager {
     //String YOUR_DEVICE_NAME = "BlueJeff";
     String SERVER_NAME = "UART Service";
 
-
+    private static final int PARAM_UART_INPUT_BUFFER_MAX_LENGTH = 1024;
 
     //Test_ESP_BLE_server
     final UUID SERVICE_UUID_TEST = UUID.fromString("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
@@ -61,7 +63,9 @@ public class BLEManager {
     BluetoothGattCharacteristic CHARACTERISTIC_TEST = null;
 
 
-    String UART_INPUT_BUFFER = "";
+    public StringBuilder UART_INPUT_BUFFER = new StringBuilder();
+
+
 
     public BLEManager(Activity activity)
     {
@@ -81,9 +85,22 @@ public class BLEManager {
 
     }
 
+    public boolean isBluetoothEnabled()
+    {
+        BluetoothAdapter mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        // Bluetooth is not enabled :)
+        // Bluetooth is enabled
+        if (mBluetoothAdapter == null) {
+            // Device does not support Bluetooth
+            return false;
+        }
+        else
+            return mBluetoothAdapter.isEnabled();
+    }
+
     public void Connect(Activity activity)
     {
-        Log.e(TAG,"Connect() to " + SERVER_NAME);
+        Log.i(TAG,"Connect() to " + SERVER_NAME);
 
         // Bluetooth
         bluetoothManager = (BluetoothManager) activity.getSystemService(BLUETOOTH_SERVICE);
@@ -102,9 +119,8 @@ public class BLEManager {
 
     public void Disconnect()
     {
-        GattClient.disconnect();
-        //gattClient = null; -> done by GattClientCallback
-        Service_UART = null;
+        if(isConnected())
+            GattClient.disconnect();
     }
 
     public boolean isConnected()
@@ -114,20 +130,20 @@ public class BLEManager {
 
     public String ReadValue_String(BluetoothGattCharacteristic characteristic)
     {
-        Log.e(TAG, "Read Value");
+        Log.i(TAG, "Read Value");
 
         String value_string = characteristic.getStringValue(0);
         if(value_string == null)
             Log.e(TAG,"onServicesDiscovered() Value=null!");
         else
-            Log.e(TAG,"onServicesDiscovered() Value=\"" + value_string + "\"");
+            Log.i(TAG,"onServicesDiscovered() Value=\"" + value_string + "\"");
 
         return value_string;
     }
 
     public byte[] ReadValue_ByteArray(BluetoothGattCharacteristic characteristic)
     {
-        Log.e(TAG, "Read Value");
+        Log.i(TAG, "Read Value");
 
         byte[] value_bytes = characteristic.getValue();
 
@@ -135,7 +151,7 @@ public class BLEManager {
             Log.e(TAG,"onServicesDiscovered() Value=null!");
         else {
             String output = new BigInteger(1, value_bytes).toString(16);
-            Log.e(TAG, "onServicesDiscovered() Value=" + output);
+            Log.i(TAG, "onServicesDiscovered() Value=" + output);
         }
         return value_bytes;
     }
@@ -144,20 +160,20 @@ public class BLEManager {
 
     public void RQST_ReadValue(BluetoothGattCharacteristic characteristic)
     {
-        Log.e(TAG, "RQST Read Value");
+        Log.i(TAG, "RQST Read Value");
 
         GattClient.readCharacteristic(characteristic);
     }
 
     public void WriteValue(BluetoothGattCharacteristic characteristic, String value_string)
     {
-        Log.e(TAG, "Read Value");
+        Log.i(TAG, "Read Value");
 
         if(value_string.length() > 0) {
-            Log.e(TAG, "onServicesDiscovered() setting value");
+            Log.i(TAG, "onServicesDiscovered() setting value");
             characteristic.setValue(value_string);
 
-            Log.e(TAG, "onServicesDiscovered() sending characteristic");
+            Log.i(TAG, "onServicesDiscovered() sending characteristic");
             GattClient.writeCharacteristic(characteristic);
         }
     }
@@ -175,22 +191,78 @@ public class BLEManager {
 
     public String UART_Read()
     {
-        String tmp = UART_INPUT_BUFFER;
-        UART_INPUT_BUFFER = "";
+        String tmp = UART_INPUT_BUFFER.toString();
+        UART_INPUT_BUFFER = new StringBuilder();
         return tmp;
     }
 
+    public void ProcessUART_Receive(byte[] new_data)
+    {
+
+        //Process incoming Data
+        //TODO Call function here that processes incomming UART Data
+
+        //Add to Input Buffer
+        String new_data_string = new String(new_data, StandardCharsets.UTF_8);
+        UART_INPUT_BUFFER.append(new_data_string);
+        if(UART_INPUT_BUFFER.length() > PARAM_UART_INPUT_BUFFER_MAX_LENGTH)
+        {
+            UART_INPUT_BUFFER.delete(0, UART_INPUT_BUFFER.length() - PARAM_UART_INPUT_BUFFER_MAX_LENGTH);
+        }
+    }
 
 
+    /***************************************
+     *         BLE Init Functions          *
+     ****************************************/
+
+    private void ResetConnection()
+    {
+        GattClient = null;
+        Service_UART = null;
+        Service_Test = null;
+        CHARACTERISTIC_UART_RX = null;
+        CHARACTERISTIC_UART_TX = null;
+
+        if(false) //TODO true here if try to reconnect after disconnect
+            startScan();
+    }
+
+    private void startScan()
+    {
+        Log.i(TAG,"startScan()");
+        if(isConnected()) {
+            Log.e(TAG,"startScan(): already connected");
+            return;
+        }
+        if(bluetoothLeScanner != null)
+        {
+            Log.e(TAG,"startScan(): already scanning");
+            return;
+        }
+
+        bluetoothScanCallback = new BluetoothScanCallback();
+        bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
+
+        if(bluetoothLeScanner == null)
+        {
+            Log.e(TAG,"startScan(): bluetoothLeScanner == null");
+            return;
+        }
+
+        bluetoothLeScanner.startScan(bluetoothScanCallback); //callback -> onScanResult(int callbackType, ScanResult result)
+    }
+
+    //System Calls this when BLE is ready to subscribe to Services
     private void InitCharacteristics()
     {
-        InitCharacteristics_Service_UART();
-        InitCharacteristics_Service_Test();
+        InitCharacteristics_Service_UART(); //Service for RX and TX UART
+        InitCharacteristics_Service_Test(); //Simple Service for connecting to a Characteristic
     }
 
     private void InitCharacteristics_Service_Test()
     {
-        Log.e(TAG,"onServicesDiscovered() getting service Test");
+        Log.i(TAG,"onServicesDiscovered() getting service Test");
         Service_Test = GattClient.getService(SERVICE_UUID_TEST);
 
         if(Service_Test == null)
@@ -199,17 +271,17 @@ public class BLEManager {
             return;
         }
 
-        Log.e(TAG,"onServicesDiscovered() getting characteristic Test");
+        Log.i(TAG,"onServicesDiscovered() getting characteristic Test");
         CHARACTERISTIC_TEST = Service_Test.getCharacteristic(CHARACTERISTIC_UUID_TEST);
 
-        Log.e(TAG,"onServicesDiscovered() enable Notification on characteristic Test");
+        Log.i(TAG,"onServicesDiscovered() enable Notification on characteristic Test");
         GattClient.setCharacteristicNotification(CHARACTERISTIC_TEST,true);
     }
 
 
     private void InitCharacteristics_Service_UART()
     {
-        Log.e(TAG,"onServicesDiscovered() getting service UART");
+        Log.i(TAG,"onServicesDiscovered() getting service UART");
         Service_UART = GattClient.getService(SERVICE_UUID_UART);
 
         if(Service_UART == null)
@@ -218,27 +290,29 @@ public class BLEManager {
             return;
         }
 
-        Log.e(TAG,"onServicesDiscovered() getting characteristic UART");
+        Log.i(TAG,"onServicesDiscovered() getting characteristic UART");
         CHARACTERISTIC_UART_TX = Service_UART.getCharacteristic(CHARACTERISTIC_UUID_UART_TX);
+
         CHARACTERISTIC_UART_RX = Service_UART.getCharacteristic(CHARACTERISTIC_UUID_UART_RX);
 
-        Log.e(TAG,"onServicesDiscovered() enable Notification on characteristic UART");
+        Log.i(TAG,"onServicesDiscovered() enable Notification on characteristic UART");
         GattClient.setCharacteristicNotification(CHARACTERISTIC_UART_TX,true);
 
         //Enable Notification for UART TX
         BluetoothGattDescriptor _descriptor = CHARACTERISTIC_UART_TX.getDescriptor(DESCRIPTOR_UUID_ID_TX_UART);
         if(_descriptor !=null)
         {
-            Log.e(TAG, "onServicesDiscovered() Write to Descriptor ENABLE_NOTIFICATION_VALUE");
+            Log.i(TAG, "onServicesDiscovered() Write to Descriptor ENABLE_NOTIFICATION_VALUE");
             _descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            //_descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
             GattClient.writeDescriptor(_descriptor);
         }
         else
-            Log.e(TAG, "onServicesDiscovered() descriptor == null");
+            Log.i(TAG, "onServicesDiscovered() descriptor == null");
 
     }
 
-
+    //Print some infos about a given characteristic
     public void printCharacteristic(BluetoothGattCharacteristic characteristic)
     {
 
@@ -273,32 +347,28 @@ public class BLEManager {
         int prop = characteristic.getProperties();
         boolean isNOTIFY = (BluetoothGattCharacteristic.PROPERTY_NOTIFY & prop) > 0;
 
-        Log.e(TAG,"onServicesDiscovered(): Properties="+characteristic.getProperties());
+        Log.i(TAG,"onServicesDiscovered(): Properties="+characteristic.getProperties());
 
         for(BluetoothGattDescriptor descriptor:characteristic.getDescriptors())
         {
-            Log.e(TAG, "onServicesDiscovered(): got descriptor UUID=" + descriptor.getUuid());
+            Log.i(TAG, "onServicesDiscovered(): got descriptor UUID=" + descriptor.getUuid());
         }
     }
 
 
-    // BLUETOOTH SCAN
 
-    private void startScan()
-    {
-        Log.e(TAG,"startScan()");
-        bluetoothScanCallback = new BluetoothScanCallback();
-        bluetoothLeScanner = bluetoothAdapter.getBluetoothLeScanner();
-        bluetoothLeScanner.startScan(bluetoothScanCallback);
-    }
+    /***************************************
+     *         BLE Callback Functions      *
+     ****************************************/
+
 
     // BLUETOOTH CONNECTION
     private void connectDevice(BluetoothDevice device) {
-        Log.e(TAG,"connectDevice()");
+        Log.i(TAG,"connectDevice()");
         if (device == null)
             Log.e(TAG,"connectDevice(): Device is null");
         else {
-            Log.e(TAG,"connectDevice(): connecting to Gatt");
+            Log.i(TAG,"connectDevice(): connecting to Gatt");
             if(GattClient == null) {
                 GattClientCallback gattClientCallback = new GattClientCallback();
                 GattClient = device.connectGatt(global.getInstance().context, false, gattClientCallback);
@@ -315,24 +385,25 @@ public class BLEManager {
 
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            Log.e(TAG, "onScanResult()");
+            Log.i(TAG, "onScanResult()");
             if (result.getDevice().getName() != null){
                 if (result.getDevice().getName().equals(SERVER_NAME)) {
-                    Log.e(TAG, "onScanResult(): Found BLE Device");
+                    Log.i(TAG, "onScanResult(): Found BLE Device");
 
                     // When find your device, connect.
                     connectDevice(result.getDevice());
 
-                    Log.e(TAG, "onScanResult(): stopping scan");
-                    bluetoothLeScanner.stopScan(bluetoothScanCallback); // stop scan
-
+                    Log.i(TAG, "onScanResult(): stopping scan");
+                    if(bluetoothLeScanner != null)
+                        bluetoothLeScanner.stopScan(bluetoothScanCallback); // stop scan
+                    bluetoothLeScanner = null;
                 }
             }
         }
 
         @Override
         public void onBatchScanResults(List<ScanResult> results) {
-            Log.e(TAG, "onBathScanResults");
+            Log.i(TAG, "onBathScanResults");
         }
 
         @Override
@@ -346,53 +417,79 @@ public class BLEManager {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-            Log.e(TAG, "onConnectionStateChange()");
+            Log.i(TAG, "onConnectionStateChange()");
 
             if (status == BluetoothGatt.GATT_FAILURE) {
                 Log.e(TAG, "onConnectionStateChange(): GATT FAILURE");
                 return;
-            } else if (status != BluetoothGatt.GATT_SUCCESS) {
-                Log.e(TAG, "onConnectionStateChange(): status != GATT_SUCCESS");
-                return;
             }
 
-            Log.e(TAG, "onConnectionStateChange(): status == GATT_SUCCESS");
-            Log.e(TAG, "onConnectionStateChange(): New State: " + newState);
+            if (status != BluetoothGatt.GATT_SUCCESS) {
+                Log.e(TAG, "onConnectionStateChange(): status != GATT_SUCCESS");
+                //Connection lost to BLE-Server <- u sure?
+                //ResetConnection();
+                //return;
+            }
 
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                Log.e(TAG, "onConnectionStateChange CONNECTED");
+            if(status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "onConnectionStateChange(): status == GATT_SUCCESS");
+            }
+
+            Log.i(TAG, "onConnectionStateChange(): New State: " + newState);
+
+            if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+                Log.i(TAG, "onConnectionStateChange CONNECTED");
 
 
                 //Here connection to Gatt was successful
 
                 global.Log("BluetoothGattCallback", "CONNECTED");
 
-                Log.e(TAG, "onConnectionStateChange(): start discover Services");
+                Log.i(TAG, "onConnectionStateChange(): start discover Services");
                 gatt.discoverServices();
+            }
 
+            if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+                //Connection lost to BLE-Server
 
-            } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Log.e(TAG, "onConnectionStateChange DISCONNECTED");
+                Log.i(TAG, "onConnectionStateChange DISCONNECTED");
 
                 global.Log("BluetoothGattCallback", "DISCONNECTED");
-                GattClient = null;
+
+                ResetConnection();
             }
+        }
+
+        @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            Log.i(TAG,"onMtuChanged()");
+
+            //after change to bigger Mtu Size -> init characteristics
+            InitCharacteristics();
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
-            Log.e(TAG, "onServicesDiscovered()");
+            Log.i(TAG, "onServicesDiscovered()");
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 Log.e(TAG, "onServicesDiscovered() status != BluetoothGatt.GATT_SUCCESS");
                 return;
             }
 
+            Log.i(TAG, "Connected to " + SERVER_NAME);
 
-            Log.e(TAG, "onServicesDiscovered() status == BluetoothGatt.GATT_SUCCESS");
+            Log.i(TAG, "onServicesDiscovered() status == BluetoothGatt.GATT_SUCCESS");
 
-            InitCharacteristics();
 
+            if(false) //TODO true here if you don't want to change packagesize to 512 (only recommented if BLE UART not used)
+            {
+                InitCharacteristics();
+            }
+            else {
+                //Request bigger Mtu size -> callback "onMtuChanged" will then call InitCharacteristics
+                GattClient.requestMtu(512);
+            }
         }
 
 
@@ -400,9 +497,9 @@ public class BLEManager {
         /*Callback reporting the result of a characteristic read operation.*/
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            Log.e(TAG,"onCharacteristicRead()");
+            Log.i(TAG,"onCharacteristicRead()");
 
-            Log.e(TAG,"onServicesDiscovered() reading Value");
+            Log.i(TAG,"onServicesDiscovered() reading Value");
             byte[] value_bytes = characteristic.getValue();
 
             //read as bytes
@@ -413,21 +510,20 @@ public class BLEManager {
                 Log.e(TAG, "onServicesDiscovered() Value=" + output);
             }
 
-
             //read as String
             String value_string = characteristic.getStringValue(0);
             if(value_string == null)
                 Log.e(TAG,"onServicesDiscovered() Value=null!");
             else
-                Log.e(TAG,"onServicesDiscovered() Value=\"" + value_string + "\"");
+                Log.i(TAG,"onServicesDiscovered() Value=\"" + value_string + "\"");
 
-            //write to characteristic
+            //Example on write to characteristic when read was complete
             /*
             if(value_string != null) {
-                Log.e(TAG, "onServicesDiscovered() setting value");
+                Log.i(TAG, "onServicesDiscovered() setting value");
                 characteristic.setValue("Hallo this is GalaxyJeff");
 
-                Log.e(TAG, "onServicesDiscovered() sending characteristic");
+                Log.i(TAG, "onServicesDiscovered() sending characteristic");
                 gatt.writeCharacteristic(characteristic);
             }
              */
@@ -438,42 +534,58 @@ public class BLEManager {
         /*Callback indicating the result of a characteristic write operation.*/
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            Log.e(TAG,"onCharacteristicWrite() with Status=" + status);
+            Log.i(TAG,"onCharacteristicWrite() with Status=" + status);
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             super.onCharacteristicChanged(gatt, characteristic);
-            Log.e(TAG,"onCharacteristicChanged()");
+            Log.i(TAG,"onCharacteristicChanged()");
             // Here you can read the characteristc's value
 
 
+            //Example Read of Characteristic as Bytes
+            /*
+            byte[] value_bytes = characteristic.getValue();
+
+            if(value_bytes == null)
+                Log.e(TAG,"onServicesDiscovered() Value=null!");
+            else {
+                String output = new BigInteger(1, value_bytes).toString(16);
+                Log.i(TAG, "onCharacteristicChanged() Value=" + output);
+
+                String text = null;
+                text = new String(value_bytes, StandardCharsets.UTF_8);
+                Log.i(TAG, "onCharacteristicChanged() Value=" + text);
+            }
+            */
+
+            //Read Characteristic as String
             String value_string = characteristic.getStringValue(0);
             if(value_string == null)
                 Log.e(TAG,"onCharacteristicChanged() Value=null!");
             else {
                 global.Log("onCharacteristicChanged", value_string);
-                Log.e(TAG, "onCharacteristicChanged() Value=\"" + value_string + "\"");
+                Log.i(TAG, format("onCharacteristicChanged() Value[len=%d]=\"%s\"", value_string.length(), value_string.replace("\n", "\\n")));
             }
-
 
             if(characteristic.equals(CHARACTERISTIC_UART_TX))
             {
-                UART_INPUT_BUFFER += characteristic.getStringValue(0);
+                byte[] value_bytes_raw = characteristic.getValue();
+                ProcessUART_Receive(value_bytes_raw);
             }
-
         }
 
         @Override
         public void onDescriptorRead(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorRead(gatt, descriptor, status);
-            Log.e(TAG,"onDescriptorRead()");
+            Log.i(TAG,"onDescriptorRead()");
         }
 
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
             super.onDescriptorWrite(gatt, descriptor, status);
-            Log.e(TAG,"onDescriptorWrite()");
+            Log.i(TAG,"onDescriptorWrite()");
         }
     }
 }

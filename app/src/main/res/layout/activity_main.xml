@@ -34,16 +34,25 @@
             android:onClick="B_Scripting_onClick"/>
 
 
+        <TextView
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Service Test - Characterisitc Test (RX/TX/Notify)\n\nFor 'Read Value' 'Request Read' must be executed to update local value"
+            />
+
         <EditText
             android:layout_marginTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="none"
+            android:hint="Read Result is displayed here"
             android:id="@+id/ET_Value_Out"
             />
 
 
         <Button
+
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Read Value"
@@ -58,13 +67,11 @@
             android:onClick="B_RQST_ReadValue_onClick"/>
 
 
-
-
-
         <EditText
             android:layout_marginTop="16dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:hint="Write to Chracteristic Test"
             android:id="@+id/ET_Value"
             />
 
@@ -75,6 +82,23 @@
             android:id="@+id/B_WriteValue"
             android:onClick="B_WriteValue_onClick"/>
 
+
+
+        <TextView
+            android:layout_marginTop="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="\n\nService UART\nClick Button below to Start listen and answer incomming UART MSG"
+            />
+
+
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Start UART Checks"
+            android:id="@+id/B_StartUARTCheck"
+            android:onClick="B_StartUARTCheck_onClick"/>
+
         <TextView
             android:id="@+id/TV_OUT"
             android:layout_width="match_parent"
@@ -82,8 +106,11 @@
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="8dp"
-            android:text="STATUS"
+            android:text="Log:\n"
             />
+
+
+
     </LinearLayout>
 
 </ScrollView>
